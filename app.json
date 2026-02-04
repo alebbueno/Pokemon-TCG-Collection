@@ -1,0 +1,36 @@
+{
+  "expo": {
+    "name": "Pokémon TCG Collection",
+    "slug": "pokemon-tcg-collection",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "scheme": "pokemontcg",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#F8F6F2"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.pokemontcg.collection"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#F8F6F2"
+      },
+      "package": "com.pokemontcg.collection",
+      "edgeToEdgeEnabled": true,
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-router"
+    ]
+  }
+}
