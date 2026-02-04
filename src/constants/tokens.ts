@@ -1,20 +1,35 @@
 export const colors = {
-    // Primary colors
-    primary: "#F6C453",
-    secondary: "#F39C12",
+    // Primary colors (from NOVO_DESIGN_SYSTEM)
+    primary: "#6C21DC",        // Roxo principal
+    secondary: "#80B4F6",      // Azul claro
+    primaryDark: "#352359",    // Roxo escuro (texto)
+
+    // Gradient colors
+    gradientStart: "#6C21DC",  // Início do gradiente
+    gradientEnd: "#80B4F6",    // Fim do gradiente
+
+    // Icon colors
+    icon: "#C0BFF2",           // Lilás claro
+    iconActive: "#6C21DC",     // Ícone ativo
 
     // Neutrals
-    background: "#F8F6F2",
-    surface: "#FFFFFF",
-    divider: "#EAEAEA",
+    background: "#FFFFFF",     // Background principal
+    surface: "#F6F7FB",        // Background secundário
+    divider: "#E6E8F0",        // Bordas/divisores
 
     // Text
-    textPrimary: "#1C1C1C",
-    textSecondary: "#7A7A7A",
+    error: "#EF4444",          // Vermelho erro
+    textPrimary: "#352359",    // Texto principal (roxo escuro)
+    textSecondary: "#6B6B8A",  // Texto secundário
+    textDisabled: "#A0A3BD",   // Texto desabilitado
 
     // Feedback
     success: "#2ECC71",
-    danger: "#E74C3C",
+    danger: "#E5484D",         // Error color from design system
+
+    // Tag/Chip colors
+    tagBackground: "#F1EFFF",
+    tagText: "#6C21DC",
 } as const;
 
 export const typography = {
@@ -48,15 +63,17 @@ export const typography = {
 export const spacing = {
     xs: 4,
     sm: 8,
-    md: 12,
-    lg: 16,
-    xl: 20,
-    "2xl": 24,
+    md: 16,
+    lg: 24,
+    xl: 32,
+    "2xl": 48,
 } as const;
 
 export const borderRadius = {
-    card: 14,
-    button: 12,
+    card: 16,
+    button: 14,
+    input: 12,
+    icon: 12,
     badge: 999,
     sm: 8,
 } as const;

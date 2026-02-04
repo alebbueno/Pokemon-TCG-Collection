@@ -1,152 +1,243 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, Modal, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { colors, spacing, borderRadius } from '@/constants/tokens';
-import { Button } from '@/components/ui/Button';
+import React from "react";
+import { View, Text, StyleSheet, Modal, TouchableOpacity, Image, ActivityIndicator } from "react-native";
+import { BlurView } from "expo-blur";
+import { Ionicons } from "@expo/vector-icons";
+import { colors, spacing, borderRadius } from "@/constants/tokens";
 
 interface CreateCollectionModalProps {
     visible: boolean;
     onClose: () => void;
-    onSubmit: (name: string, description: string) => void;
+    onConfirm: () => void;
+    setName: string;
+    totalCards: number;
+    setLogo?: string;
+    loading?: boolean;
+    downloadStatus?: 'creating' | 'downloading' | 'complete';
 }
 
-export function CreateCollectionModal({ visible, onClose, onSubmit }: CreateCollectionModalProps) {
-    const [name, setName] = useState('');
-    const [description, setDescription] = useState('');
+export function CreateCollectionModal({
+    visible,
+    onClose,
+    onConfirm,
+    setName,
+    totalCards,
+    setLogo,
+    loading = false,
+    downloadStatus = 'creating',
+}: CreateCollectionModalProps) {
+    const getButtonText = () => {
+        if (!loading) return 'Criar Coleção';
 
-    const handleSubmit = () => {
-        if (!name.trim()) return;
-        onSubmit(name, description);
-        setName('');
-        setDescription('');
+        switch (downloadStatus) {
+            case 'creating':
+                return 'Criando...';
+            case 'downloading':
+                return 'Baixando cartas...';
+            case 'complete':
+                return 'Finalizando...';
+            default:
+                return 'Criando...';
+        }
     };
-
     return (
         <Modal
-            animationType="slide"
-            transparent={true}
             visible={visible}
+            transparent
+            animationType="fade"
             onRequestClose={onClose}
         >
-            <KeyboardAvoidingView
-                behavior={Platform.OS === "ios" ? "padding" : "height"}
-                style={styles.modalOverlay}
-            >
-                <View style={styles.modalContent}>
-                    <View style={styles.header}>
-                        <Text style={styles.title}>Nova Coleção</Text>
-                        <TouchableOpacity onPress={onClose}>
-                            <Ionicons name="close" size={24} color={colors.textSecondary} />
-                        </TouchableOpacity>
-                    </View>
-
-                    <ScrollView style={styles.form}>
-                        <View style={styles.inputGroup}>
-                            <Text style={styles.label}>Nome da Coleção</Text>
-                            <TextInput
-                                style={styles.input}
-                                placeholder="Ex: Meus Favoritos"
-                                value={name}
-                                onChangeText={setName}
-                                placeholderTextColor={colors.textSecondary}
-                                autoFocus
-                            />
+            <BlurView intensity={20} style={styles.overlay}>
+                <TouchableOpacity
+                    style={styles.backdrop}
+                    activeOpacity={1}
+                    onPress={onClose}
+                />
+                <View style={styles.modalContainer}>
+                    <View style={styles.modal}>
+                        {/* Header with logo */}
+                        <View style={styles.header}>
+                            {setLogo && (
+                                <Image
+                                    source={{ uri: setLogo }}
+                                    style={styles.logo}
+                                    resizeMode="contain"
+                                />
+                            )}
+                            <Text style={styles.title}>Criar Coleção?</Text>
                         </View>
 
-                        <View style={styles.inputGroup}>
-                            <Text style={styles.label}>Descrição (Opcional)</Text>
-                            <TextInput
-                                style={[styles.input, styles.textArea]}
-                                placeholder="Uma breve descrição..."
-                                value={description}
-                                onChangeText={setDescription}
-                                placeholderTextColor={colors.textSecondary}
-                                multiline
-                                numberOfLines={3}
-                            />
-                        </View>
-                    </ScrollView>
+                        {/* Content */}
+                        <View style={styles.content}>
+                            <View style={styles.infoCard}>
+                                <Ionicons name="albums" size={32} color={colors.primary} />
+                                <View style={styles.infoText}>
+                                    <Text style={styles.setName}>{setName}</Text>
+                                    <Text style={styles.cardCount}>{totalCards} cartas</Text>
+                                </View>
+                            </View>
 
-                    <View style={styles.footer}>
-                        <Button
-                            variant="secondary"
-                            style={styles.button}
-                            onPress={onClose}
-                        >
-                            Cancelar
-                        </Button>
-                        <Button
-                            variant="primary"
-                            style={styles.button}
-                            onPress={handleSubmit}
-                            disabled={!name.trim()}
-                        >
-                            Criar
-                        </Button>
+                            <View style={styles.descriptionBox}>
+                                <Ionicons
+                                    name="information-circle-outline"
+                                    size={20}
+                                    color={colors.textSecondary}
+                                />
+                                <Text style={styles.description}>
+                                    Todas as cartas serão adicionadas com quantidade 0. Marque as que você possui!
+                                </Text>
+                            </View>
+                        </View>
+
+                        {/* Actions */}
+                        <View style={styles.actions}>
+                            <TouchableOpacity
+                                style={[styles.button, styles.cancelButton]}
+                                onPress={onClose}
+                                disabled={loading}
+                            >
+                                <Text style={styles.cancelButtonText}>Cancelar</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                style={[styles.button, styles.confirmButton, loading && styles.buttonDisabled]}
+                                onPress={onConfirm}
+                                disabled={loading}
+                            >
+                                {loading ? (
+                                    <>
+                                        <ActivityIndicator size="small" color="#FFF" />
+                                        <Text style={styles.confirmButtonText}>{getButtonText()}</Text>
+                                    </>
+                                ) : (
+                                    <>
+                                        <Ionicons name="add-circle" size={20} color="#FFF" />
+                                        <Text style={styles.confirmButtonText}>Criar Coleção</Text>
+                                    </>
+                                )}
+                            </TouchableOpacity>
+                        </View>
                     </View>
                 </View>
-            </KeyboardAvoidingView>
+            </BlurView>
         </Modal>
     );
 }
 
 const styles = StyleSheet.create({
-    modalOverlay: {
+    overlay: {
         flex: 1,
-        backgroundColor: 'rgba(0, 0, 0, 0.5)',
-        justifyContent: 'flex-end',
+        justifyContent: "center",
+        alignItems: "center",
     },
-    modalContent: {
+    backdrop: {
+        ...StyleSheet.absoluteFillObject,
+    },
+    modalContainer: {
+        width: "85%",
+        maxWidth: 400,
+    },
+    modal: {
         backgroundColor: colors.surface,
-        borderTopLeftRadius: 24,
-        borderTopRightRadius: 24,
-        padding: spacing.lg,
-        maxHeight: '80%',
+        borderRadius: borderRadius.card,
+        overflow: "hidden",
+        elevation: 10,
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 10 },
+        shadowOpacity: 0.3,
+        shadowRadius: 20,
     },
     header: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: spacing.lg,
+        padding: spacing.lg,
+        alignItems: "center",
+        borderBottomWidth: 1,
+        borderBottomColor: colors.divider,
     },
-    title: {
-        fontSize: 20,
-        fontWeight: 'bold',
-        color: colors.textPrimary,
-        fontFamily: 'Inter-Bold',
-    },
-    form: {
-        marginBottom: spacing.lg,
-    },
-    inputGroup: {
+    logo: {
+        width: 120,
+        height: 48,
         marginBottom: spacing.md,
     },
-    label: {
-        fontSize: 14,
-        fontWeight: '600',
+    title: {
+        fontSize: 22,
+        fontWeight: "bold",
         color: colors.textPrimary,
-        marginBottom: 8,
-        fontFamily: 'Inter-SemiBold',
+        textAlign: "center",
     },
-    input: {
+    content: {
+        padding: spacing.lg,
+    },
+    infoCard: {
+        flexDirection: "row",
+        alignItems: "center",
         backgroundColor: colors.background,
-        borderWidth: 1,
-        borderColor: colors.divider,
-        borderRadius: borderRadius.button,
         padding: spacing.md,
+        borderRadius: borderRadius.sm,
+        marginBottom: spacing.md,
+    },
+    infoText: {
+        marginLeft: spacing.md,
+        flex: 1,
+    },
+    setName: {
         fontSize: 16,
+        fontWeight: "600",
         color: colors.textPrimary,
-        fontFamily: 'Inter-Regular',
+        marginBottom: 2,
     },
-    textArea: {
-        height: 100,
-        textAlignVertical: 'top',
+    cardCount: {
+        fontSize: 14,
+        color: colors.textSecondary,
     },
-    footer: {
-        flexDirection: 'row',
+    descriptionBox: {
+        flexDirection: "row",
+        backgroundColor: colors.primary + "15",
+        padding: spacing.md,
+        borderRadius: borderRadius.sm,
+        borderLeftWidth: 3,
+        borderLeftColor: colors.primary,
+    },
+    description: {
+        flex: 1,
+        fontSize: 13,
+        color: colors.textSecondary,
+        lineHeight: 18,
+        marginLeft: spacing.sm,
+    },
+    actions: {
+        flexDirection: "row",
         gap: spacing.md,
+        padding: spacing.lg,
+        borderTopWidth: 1,
+        borderTopColor: colors.divider,
     },
     button: {
         flex: 1,
+        paddingVertical: spacing.md,
+        paddingHorizontal: spacing.lg,
+        borderRadius: borderRadius.button,
+        alignItems: "center",
+        justifyContent: "center",
+        flexDirection: "row",
+        gap: spacing.xs,
+    },
+    cancelButton: {
+        backgroundColor: colors.background,
+        borderWidth: 1,
+        borderColor: colors.divider,
+    },
+    cancelButtonText: {
+        fontSize: 16,
+        fontWeight: "600",
+        color: colors.textPrimary,
+    },
+    confirmButton: {
+        backgroundColor: colors.primary,
+    },
+    confirmButtonText: {
+        fontSize: 16,
+        fontWeight: "600",
+        color: "#FFF",
+    },
+    buttonDisabled: {
+        opacity: 0.6,
     },
 });

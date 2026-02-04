@@ -1,53 +1,53 @@
 import React, { useEffect, useState, useCallback } from "react";
-import { View, Text, StyleSheet, TouchableOpacity, Image } from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity, Image, ActivityIndicator } from "react-native";
 import { useRouter, useFocusEffect } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { colors, spacing, borderRadius } from "@/constants/tokens";
+import { colors, spacing, borderRadius, shadows } from "@/constants/tokens";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
-import { StorageService, UserCollection } from "@/services/storage";
-import { CreateCollectionModal } from "@/components/collections/CreateCollectionModal";
+import { CollectionService, Collection } from "@/services/collection";
+import { useAuth } from "@/hooks/useAuth";
 
 export function MyCollectionsList() {
     const router = useRouter();
-    const [collections, setCollections] = useState<UserCollection[]>([]);
-    const [isModalVisible, setModalVisible] = useState(false);
+    const { user } = useAuth();
+    const [collections, setCollections] = useState<Collection[]>([]);
+    const [loading, setLoading] = useState(true);
 
     useFocusEffect(
         useCallback(() => {
             loadCollections();
-        }, [])
+        }, [user])
     );
 
     const loadCollections = async () => {
-        const data = await StorageService.getUserCollections();
-        setCollections(data);
+        if (!user) return;
+        try {
+            setLoading(true);
+            const data = await CollectionService.getUserCollections(user.id);
+            setCollections(data);
+        } catch (error) {
+            console.error("Failed to load collections", error);
+        } finally {
+            setLoading(false);
+        }
     };
 
     const handleCreateCollection = () => {
-        setModalVisible(true);
-    };
-
-    const handleSaveCollection = async (name: string, description: string) => {
-        try {
-            const newCollection: UserCollection = {
-                id: Date.now().toString(),
-                name,
-                description,
-                createdAt: Date.now(),
-                cards: []
-            };
-            await StorageService.saveUserCollection(newCollection);
-            await loadCollections();
-            setModalVisible(false);
-        } catch (error) {
-            console.error("Failed to create collection", error);
-        }
+        router.push("/(tabs)/explore");
     };
 
     const handleOpenCollection = (id: string) => {
         router.push(`/collection/${id}`);
     };
+
+    if (loading && collections.length === 0) {
+        return (
+            <View style={styles.loadingContainer}>
+                <ActivityIndicator size="small" color={colors.primary} />
+            </View>
+        );
+    }
 
     const hasCollections = collections.length > 0;
 
@@ -69,53 +69,39 @@ export function MyCollectionsList() {
                     </View>
                     <Text style={styles.emptyTitle}>Nenhuma coleção ainda</Text>
                     <Text style={styles.emptyText}>
-                        Comece a organizar suas cartas criando sua primeira coleção.
+                        Comece a organizar suas cartas adicionando edições à sua coleção.
                     </Text>
                     <Button
                         variant="primary"
                         onPress={handleCreateCollection}
                         style={styles.createButton}
                     >
-                        Criar Nova Coleção
+                        Explorar Edições
                     </Button>
                 </View>
             ) : (
                 <View style={styles.grid}>
-                    {collections.slice(0, 3).map((collection) => ( // Show only first 3
+                    {collections.slice(0, 3).map((collection) => (
                         <Card
                             key={collection.id}
                             style={styles.collectionCard}
                             onPress={() => handleOpenCollection(collection.id)}
                         >
-                            <View style={[styles.collectionThumb, { overflow: 'hidden' }]}>
-                                {collection.coverImage ? (
-                                    <View
-                                        style={{
-                                            width: 120, // 300 * 0.4
-                                            height: 160, // 400 * 0.4
-                                            transform: [
-                                                { translateX: (collection.coverStyle?.offsetX || 0) * 0.4 },
-                                                { translateY: (collection.coverStyle?.offsetY || 0) * 0.4 },
-                                                { scale: collection.coverStyle?.scale || 1 }
-                                            ],
-                                            alignItems: 'center',
-                                            justifyContent: 'center',
-                                        }}
-                                    >
-                                        <Image
-                                            source={{ uri: `${collection.coverImage}/low.png` }}
-                                            style={{ width: '100%', height: '100%' }}
-                                            resizeMode="contain"
-                                        />
-                                    </View>
+                            <View style={styles.collectionThumb}>
+                                {collection.set_logo ? (
+                                    <Image
+                                        source={{ uri: collection.set_logo }}
+                                        style={styles.logoImage}
+                                        resizeMode="contain"
+                                    />
                                 ) : (
                                     <Ionicons name="images-outline" size={32} color={colors.textSecondary} />
                                 )}
                             </View>
                             <View style={styles.collectionInfo}>
-                                <Text style={styles.collectionName}>{collection.name}</Text>
+                                <Text style={styles.collectionName}>{collection.set_name}</Text>
                                 <Text style={styles.collectionCount}>
-                                    {collection.cards.length} cartas
+                                    {collection.total_cards} cartas
                                 </Text>
                             </View>
                             <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} style={{ marginRight: spacing.md }} />
@@ -127,16 +113,10 @@ export function MyCollectionsList() {
                         style={{ marginTop: spacing.sm }}
                         icon="add"
                     >
-                        Nova Coleção
+                        Adicionar Coleção
                     </Button>
                 </View>
             )}
-
-            <CreateCollectionModal
-                visible={isModalVisible}
-                onClose={() => setModalVisible(false)}
-                onSubmit={handleSaveCollection}
-            />
         </View>
     );
 }
@@ -146,6 +126,10 @@ const styles = StyleSheet.create({
         marginTop: spacing.xl,
         paddingHorizontal: spacing.lg,
         paddingBottom: 40,
+    },
+    loadingContainer: {
+        padding: spacing.xl,
+        alignItems: 'center',
     },
     header: {
         flexDirection: "row",
@@ -212,9 +196,14 @@ const styles = StyleSheet.create({
     collectionThumb: {
         width: 80,
         height: 80,
-        backgroundColor: colors.background,
+        backgroundColor: colors.surface,
         alignItems: "center",
         justifyContent: "center",
+        padding: 10,
+    },
+    logoImage: {
+        width: '100%',
+        height: '100%',
     },
     collectionInfo: {
         flex: 1,
@@ -232,9 +221,5 @@ const styles = StyleSheet.create({
         color: colors.textSecondary,
         fontWeight: "500",
         fontFamily: "Inter-Medium",
-    },
-    coverImage: {
-        width: '100%',
-        height: '100%',
     },
 });

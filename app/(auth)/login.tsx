@@ -9,6 +9,8 @@ import {
     ScrollView,
     Alert,
     StyleSheet,
+    Image,
+    ImageBackground,
 } from "react-native";
 import { useRouter } from "expo-router";
 import * as WebBrowser from "expo-web-browser";
@@ -96,175 +98,265 @@ export default function Login() {
     };
 
     return (
-        <KeyboardAvoidingView
-            behavior={Platform.OS === "ios" ? "padding" : "height"}
-            style={styles.container}
-        >
-            <ScrollView
-                contentContainerStyle={styles.scrollContent}
-                keyboardShouldPersistTaps="handled"
+        <View style={styles.container}>
+            {/* Image Background Header */}
+            <ImageBackground
+                source={require("../../assets/img-login.jpg")}
+                style={styles.imageHeader}
+                resizeMode="cover"
+            />
+
+            <KeyboardAvoidingView
+                behavior={Platform.OS === "ios" ? "padding" : "height"}
+                style={styles.keyboardView}
             >
-                <View style={styles.header}>
-                    <Text style={styles.title}>
-                        Bem-vindo de volta
-                    </Text>
-                    <Text style={styles.subtitle}>
-                        Faça login para continuar sua coleção
-                    </Text>
-                </View>
-
-                <View style={styles.inputGroup}>
-                    <Text style={styles.label}>
-                        E-mail
-                    </Text>
-                    <TextInput
-                        style={styles.input}
-                        placeholder="seu@email.com"
-                        placeholderTextColor={colors.textSecondary}
-                        value={email}
-                        onChangeText={setEmail}
-                        autoCapitalize="none"
-                        keyboardType="email-address"
-                        editable={!loading}
-                    />
-                </View>
-
-                <View style={styles.inputGroup}>
-                    <Text style={styles.label}>
-                        Senha
-                    </Text>
-                    <TextInput
-                        style={styles.input}
-                        placeholder="••••••••"
-                        placeholderTextColor={colors.textSecondary}
-                        value={password}
-                        onChangeText={setPassword}
-                        secureTextEntry
-                        editable={!loading}
-                    />
-                </View>
-
-                <TouchableOpacity
-                    onPress={() => router.push("/(auth)/forgot-password")}
-                    style={styles.forgotPassword}
-                    disabled={loading}
+                <ScrollView
+                    contentContainerStyle={styles.scrollContent}
+                    keyboardShouldPersistTaps="handled"
+                    showsVerticalScrollIndicator={false}
                 >
-                    <Text style={styles.forgotPasswordText}>
-                        Esqueceu a senha?
-                    </Text>
-                </TouchableOpacity>
+                    {/* White Card Container */}
+                    <View style={styles.card}>
+                        {/* Logo */}
+                        <View style={styles.logoContainer}>
+                            <Image
+                                source={require("../../assets/pokeio-logo.png")}
+                                style={styles.logo}
+                                resizeMode="contain"
+                            />
+                        </View>
 
-                <Button
-                    variant="primary"
-                    onPress={handleLogin}
-                    loading={loading}
-                    style={styles.button}
-                >
-                    Entrar
-                </Button>
+                        <View style={styles.header}>
+                            <Text style={styles.title}>Entrar</Text>
+                            <Text style={styles.subtitle}>
+                                Ainda não tem conta?{" "}
+                                <Text
+                                    style={styles.linkText}
+                                    onPress={() => router.push("/(auth)/register")}
+                                >
+                                    Cadastre-se
+                                </Text>
+                            </Text>
+                        </View>
 
-                <Button
-                    variant="secondary"
-                    onPress={() => promptAsync()}
-                    disabled={loading || !request}
-                    style={styles.button}
-                    loading={loading && !email} // Show loading on this button if loading is true but email is empty (implying social login)
-                >
-                    Entrar com Google
-                </Button>
+                        <View style={styles.form}>
+                            {/* Email Input */}
+                            <View style={styles.inputContainer}>
+                                <TextInput
+                                    style={styles.input}
+                                    placeholder="Digite seu e-mail"
+                                    placeholderTextColor={colors.textSecondary}
+                                    value={email}
+                                    onChangeText={setEmail}
+                                    autoCapitalize="none"
+                                    keyboardType="email-address"
+                                    editable={!loading}
+                                />
+                            </View>
 
-                <View style={styles.footer}>
-                    <Text style={styles.footerText}>
-                        Não tem uma conta?{" "}
-                    </Text>
-                    <TouchableOpacity
-                        onPress={() => router.push("/(auth)/register")}
-                        disabled={loading}
-                    >
-                        <Text style={styles.signUpText}>
-                            Cadastre-se
-                        </Text>
-                    </TouchableOpacity>
-                </View>
-            </ScrollView>
-        </KeyboardAvoidingView>
+                            {/* Password Input */}
+                            <View style={styles.inputContainer}>
+                                <TextInput
+                                    style={styles.input}
+                                    placeholder="Digite sua senha"
+                                    placeholderTextColor={colors.textSecondary}
+                                    value={password}
+                                    onChangeText={setPassword}
+                                    secureTextEntry
+                                    editable={!loading}
+                                />
+                            </View>
+
+                            {/* Forgot Password */}
+                            <TouchableOpacity
+                                onPress={() => router.push("/(auth)/forgot-password")}
+                                style={styles.forgotPassword}
+                                disabled={loading}
+                            >
+                                <Text style={styles.forgotPasswordText}>
+                                    Esqueceu a senha?
+                                </Text>
+                            </TouchableOpacity>
+
+                            {/* Login Button */}
+                            <TouchableOpacity
+                                style={[styles.loginButton, loading && styles.buttonDisabled]}
+                                onPress={handleLogin}
+                                disabled={loading}
+                                activeOpacity={0.8}
+                            >
+                                <Text style={styles.loginButtonText}>
+                                    {loading ? "Entrando..." : "Entrar"}
+                                </Text>
+                            </TouchableOpacity>
+
+                            {/* Divider */}
+                            <View style={styles.dividerContainer}>
+                                <View style={styles.divider} />
+                                <Text style={styles.dividerText}>Ou Continue Com</Text>
+                                <View style={styles.divider} />
+                            </View>
+
+                            {/* Social Login Buttons */}
+                            <View style={styles.socialButtonsContainer}>
+                                <TouchableOpacity
+                                    style={styles.socialButton}
+                                    onPress={() => promptAsync()}
+                                    disabled={loading || !request}
+                                    activeOpacity={0.8}
+                                >
+                                    <Text style={styles.socialButtonText}>Google</Text>
+                                </TouchableOpacity>
+                            </View>
+                        </View>
+                    </View>
+                </ScrollView>
+            </KeyboardAvoidingView>
+        </View>
     );
 }
 
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#F8F6F2', // bg-background
+        backgroundColor: colors.surface,
+    },
+    imageHeader: {
+        position: "absolute",
+        top: 0,
+        left: 0,
+        right: 0,
+        height: 220,
+        zIndex: 0,
+    },
+    keyboardView: {
+        flex: 1,
     },
     scrollContent: {
         flexGrow: 1,
-        justifyContent: 'center',
-        paddingHorizontal: 24, // px-lg
+        paddingHorizontal: spacing.lg,
+        marginTop: 180, // 220px (image height) - 80px (overlap)
+    },
+    card: {
+        backgroundColor: colors.background,
+        borderRadius: borderRadius.card,
+        padding: spacing.lg,
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.1,
+        shadowRadius: 12,
+        elevation: 5,
+        marginBottom: spacing.xl,
+        position: "relative",
+        zIndex: 10,
+    },
+    logoContainer: {
+        alignItems: "center",
+        marginBottom: spacing.md,
+        marginTop: -spacing.sm,
+    },
+    logo: {
+        width: 160,
+        height: 80,
     },
     header: {
-        marginBottom: 48, // mb-2xl
+        marginBottom: spacing.lg,
     },
     title: {
-        fontSize: 32, // text-title-xl
+        fontSize: 28,
+        fontWeight: "700",
         color: colors.textPrimary,
-        fontWeight: 'bold',
-        marginBottom: 8, // mb-sm
-        fontFamily: 'Inter-Bold',
+        marginBottom: spacing.sm,
+        fontFamily: "Inter-Bold",
+        textAlign: "center",
     },
     subtitle: {
-        fontSize: 16, // text-body
+        fontSize: 15,
         color: colors.textSecondary,
-        fontFamily: 'Inter-Regular',
+        fontFamily: "Inter-Regular",
+        textAlign: "center",
     },
-    inputGroup: {
-        marginBottom: 32, // mb-xl (email) / mb-md (password) - standardized here for simplicity or specific if needed
+    linkText: {
+        color: colors.primary,
+        fontWeight: "600",
+        fontFamily: "Inter-SemiBold",
     },
-    label: {
-        fontSize: 14, // text-subtitle
-        color: colors.textPrimary,
-        fontWeight: '500', // font-medium
-        marginBottom: 8, // mb-sm
-        fontFamily: 'Inter-Medium',
+    form: {
+        gap: spacing.md,
+    },
+    inputContainer: {
+        marginBottom: spacing.sm,
     },
     input: {
-        backgroundColor: colors.surface,
-        borderRadius: borderRadius.button,
-        paddingHorizontal: 16, // px-lg
-        paddingVertical: 16, // py-4
-        fontSize: 16, // text-body
-        color: colors.textPrimary,
+        backgroundColor: colors.background,
         borderWidth: 1,
         borderColor: colors.divider,
-        fontFamily: 'Inter-Regular',
+        borderRadius: borderRadius.input,
+        paddingHorizontal: spacing.md,
+        paddingVertical: 16,
+        fontSize: 15,
+        color: colors.textPrimary,
+        fontFamily: "Inter-Regular",
     },
     forgotPassword: {
-        marginBottom: 32, // mb-xl
-        alignSelf: 'flex-end',
+        alignSelf: "flex-end",
+        marginBottom: spacing.sm,
     },
     forgotPasswordText: {
-        fontSize: 16, // text-body
-        color: colors.secondary,
-        fontWeight: '500', // font-medium
-        textAlign: 'right',
-        fontFamily: 'Inter-Medium',
+        fontSize: 14,
+        color: colors.primary,
+        fontWeight: "500",
+        fontFamily: "Inter-Medium",
     },
-    button: {
-        marginBottom: 16, // mb-md / mb-xl
+    loginButton: {
+        backgroundColor: colors.primary,
+        borderRadius: borderRadius.button,
+        paddingVertical: 16,
+        alignItems: "center",
+        justifyContent: "center",
+        marginTop: spacing.sm,
     },
-    footer: {
-        flexDirection: 'row',
-        justifyContent: 'center',
-        marginTop: 16,
+    loginButtonText: {
+        fontSize: 16,
+        fontWeight: "600",
+        color: "#FFFFFF",
+        fontFamily: "Inter-SemiBold",
     },
-    footerText: {
-        fontSize: 16, // text-body
+    buttonDisabled: {
+        opacity: 0.6,
+    },
+    dividerContainer: {
+        flexDirection: "row",
+        alignItems: "center",
+        marginVertical: spacing.lg,
+    },
+    divider: {
+        flex: 1,
+        height: 1,
+        backgroundColor: colors.divider,
+    },
+    dividerText: {
+        marginHorizontal: spacing.md,
+        fontSize: 13,
         color: colors.textSecondary,
-        fontFamily: 'Inter-Regular',
+        fontFamily: "Inter-Regular",
     },
-    signUpText: {
-        fontSize: 16, // text-body
-        color: colors.secondary,
-        fontWeight: '600', // font-semibold
-        fontFamily: 'Inter-SemiBold',
+    socialButtonsContainer: {
+        gap: spacing.sm,
+    },
+    socialButton: {
+        backgroundColor: colors.background,
+        borderWidth: 1,
+        borderColor: colors.divider,
+        borderRadius: borderRadius.button,
+        paddingVertical: 14,
+        alignItems: "center",
+        justifyContent: "center",
+    },
+    socialButtonText: {
+        fontSize: 15,
+        fontWeight: "500",
+        color: colors.textPrimary,
+        fontFamily: "Inter-Medium",
     },
 });

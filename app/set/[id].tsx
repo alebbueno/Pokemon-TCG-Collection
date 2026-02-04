@@ -9,10 +9,14 @@ import { Card } from "@/components/ui/Card";
 import { ImageWithLoader } from "@/components/ui/ImageWithLoader";
 import { StorageService } from "@/services/storage";
 import { AddToCollectionModal } from "@/components/collections/AddToCollectionModal";
+import { CollectionService } from "@/services/collection";
+import { useAuth } from "@/hooks/useAuth";
+import { CreateCollectionModal } from "@/components/collections/CreateCollectionModal";
 
 export default function SetDetailsScreen() {
     const { id } = useLocalSearchParams<{ id: string }>();
     const router = useRouter();
+    const { user } = useAuth();
     const [set, setSet] = useState<PokemonSet | null>(null);
     const [cards, setCards] = useState<PokemonCard[]>([]);
     const [loading, setLoading] = useState(true);
@@ -20,6 +24,10 @@ export default function SetDetailsScreen() {
     const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
     const [isOffline, setIsOffline] = useState(false);
     const [downloading, setDownloading] = useState(false);
+    const [hasCollection, setHasCollection] = useState(false);
+    const [creatingCollection, setCreatingCollection] = useState(false);
+    const [showCreateModal, setShowCreateModal] = useState(false);
+    const [downloadStatus, setDownloadStatus] = useState<'creating' | 'downloading' | 'complete'>('creating');
 
     // Multi-selection state
     const [isSelectionMode, setSelectionMode] = useState(false);
@@ -30,12 +38,54 @@ export default function SetDetailsScreen() {
         if (id) {
             checkOfflineStatus();
             loadSetDetails();
+            checkCollectionStatus();
         }
     }, [id]);
 
     const checkOfflineStatus = async () => {
         const offline = await StorageService.isSetOffline(id);
         setIsOffline(offline);
+    };
+
+    const checkCollectionStatus = async () => {
+        if (!user) return;
+        const exists = await CollectionService.hasCollection(user.id, id);
+        setHasCollection(exists);
+    };
+
+    const handleCreateCollection = async () => {
+        if (!user || !set || creatingCollection) return;
+
+        try {
+            setCreatingCollection(true);
+            setDownloadStatus('creating');
+
+            const { collection, error } = await CollectionService.createCollectionWithDownload(
+                user.id,
+                set.id,
+                (status) => {
+                    setDownloadStatus(status);
+                }
+            );
+
+            if (error) {
+                console.error("Error creating collection:", error.message);
+                return;
+            }
+
+            setHasCollection(true);
+            setShowCreateModal(false);
+
+            // Navigate to collection
+            setTimeout(() => {
+                router.push(`/collection/${collection.id}`);
+            }, 300);
+        } catch (error: any) {
+            console.error("Error:", error.message || "Erro ao criar coleção");
+        } finally {
+            setCreatingCollection(false);
+            setDownloadStatus('creating');
+        }
     };
 
     const loadSetDetails = async () => {
@@ -310,6 +360,29 @@ export default function SetDetailsScreen() {
                 }}
                 cardIds={selectedCards}
             />
+
+            <CreateCollectionModal
+                visible={showCreateModal}
+                onClose={() => setShowCreateModal(false)}
+                onConfirm={handleCreateCollection}
+                setName={set?.name || ""}
+                totalCards={set?.cardCount.total || 0}
+                setLogo={set?.logo}
+                loading={creatingCollection}
+                downloadStatus={downloadStatus}
+            />
+
+            {/* Floating Action Button */}
+            {!hasCollection && !isSelectionMode && (
+                <TouchableOpacity
+                    style={styles.fab}
+                    onPress={() => setShowCreateModal(true)}
+                    activeOpacity={0.9}
+                >
+                    <Ionicons name="add" size={28} color="#FFF" />
+                    <Text style={styles.fabText}>Criar Coleção</Text>
+                </TouchableOpacity>
+            )}
         </SafeAreaView>
     );
 }
@@ -510,5 +583,28 @@ const styles = StyleSheet.create({
         fontWeight: '600',
         fontSize: 14,
         fontFamily: 'Inter-SemiBold',
+    },
+    fab: {
+        position: 'absolute',
+        bottom: 100,
+        right: spacing.lg,
+        backgroundColor: colors.primary,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: spacing.sm,
+        paddingVertical: spacing.md,
+        paddingHorizontal: spacing.lg,
+        borderRadius: 999,
+        elevation: 6,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 8,
+    },
+    fabText: {
+        color: '#FFF',
+        fontSize: 16,
+        fontWeight: 'bold',
+        fontFamily: 'Inter-Bold',
     },
 });

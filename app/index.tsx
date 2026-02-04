@@ -15,8 +15,8 @@ export default function Index() {
                 console.log(" [Index] Session found, redirecting to Home");
                 router.replace("/(tabs)/home");
             } else {
-                console.log(" [Index] No session, redirecting to Login");
-                router.replace("/(auth)/login");
+                console.log(" [Index] No session, redirecting to Welcome");
+                router.replace("/(auth)/welcome");
             }
         }
     }, [session, loading]);
@@ -41,7 +41,7 @@ export default function Index() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#F8F6F2',
+        backgroundColor: colors.background,
         alignItems: 'center',
         justifyContent: 'center',
     },
@@ -51,7 +51,7 @@ const styles = StyleSheet.create({
     logoContainer: {
         width: 128,
         height: 128,
-        backgroundColor: '#F6C453',
+        backgroundColor: colors.primary,
         borderRadius: 9999,
         alignItems: 'center',
         justifyContent: 'center',

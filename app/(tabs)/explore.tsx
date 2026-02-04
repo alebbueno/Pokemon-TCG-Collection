@@ -158,6 +158,7 @@ const styles = StyleSheet.create({
     },
     listContent: {
         padding: spacing.md,
+        paddingBottom: 85,
     },
     yearHeaderContainer: {
         paddingVertical: spacing.sm,

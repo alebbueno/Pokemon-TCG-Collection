@@ -9,6 +9,8 @@ import {
     ScrollView,
     Alert,
     StyleSheet,
+    Image,
+    ImageBackground,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { Button } from "@/components/ui";
@@ -63,175 +65,270 @@ export default function Register() {
     };
 
     return (
-        <KeyboardAvoidingView
-            behavior={Platform.OS === "ios" ? "padding" : "height"}
-            style={styles.container}
-        >
-            <ScrollView
-                contentContainerStyle={styles.scrollContent}
-                keyboardShouldPersistTaps="handled"
+        <View style={styles.container}>
+            {/* Image Background Header */}
+            <ImageBackground
+                source={require("../../assets/img-login.jpg")}
+                style={styles.imageHeader}
+                resizeMode="cover"
+            />
+
+            <KeyboardAvoidingView
+                behavior={Platform.OS === "ios" ? "padding" : "height"}
+                style={styles.keyboardView}
             >
-                <View style={styles.header}>
-                    <Text style={styles.title}>
-                        Criar Conta
-                    </Text>
-                    <Text style={styles.subtitle}>
-                        Junte-se à comunidade de colecionadores
-                    </Text>
-                </View>
-
-                <View style={styles.inputGroup}>
-                    <Text style={styles.label}>
-                        Nome
-                    </Text>
-                    <TextInput
-                        style={styles.input}
-                        placeholder="Seu nome"
-                        placeholderTextColor={colors.textSecondary}
-                        value={name}
-                        onChangeText={setName}
-                        autoCapitalize="words"
-                        editable={!loading}
-                    />
-                </View>
-
-                <View style={styles.inputGroup}>
-                    <Text style={styles.label}>
-                        E-mail
-                    </Text>
-                    <TextInput
-                        style={styles.input}
-                        placeholder="seu@email.com"
-                        placeholderTextColor={colors.textSecondary}
-                        value={email}
-                        onChangeText={setEmail}
-                        autoCapitalize="none"
-                        keyboardType="email-address"
-                        editable={!loading}
-                    />
-                </View>
-
-                <View style={styles.inputGroup}>
-                    <Text style={styles.label}>
-                        Senha
-                    </Text>
-                    <TextInput
-                        style={styles.input}
-                        placeholder="••••••••"
-                        placeholderTextColor={colors.textSecondary}
-                        value={password}
-                        onChangeText={setPassword}
-                        secureTextEntry
-                        editable={!loading}
-                    />
-                </View>
-
-                <View style={styles.inputGroup}>
-                    <Text style={styles.label}>
-                        Confirmar Senha
-                    </Text>
-                    <TextInput
-                        style={styles.input}
-                        placeholder="••••••••"
-                        placeholderTextColor={colors.textSecondary}
-                        value={confirmPassword}
-                        onChangeText={setConfirmPassword}
-                        secureTextEntry
-                        editable={!loading}
-                    />
-                </View>
-
-                <Button
-                    variant="primary"
-                    onPress={handleRegister}
-                    loading={loading}
-                    style={styles.button}
+                <ScrollView
+                    contentContainerStyle={styles.scrollContent}
+                    keyboardShouldPersistTaps="handled"
+                    showsVerticalScrollIndicator={false}
                 >
-                    Cadastrar
-                </Button>
+                    {/* White Card Container */}
+                    <View style={styles.card}>
+                        {/* Logo */}
+                        <View style={styles.logoContainer}>
+                            <Image
+                                source={require("../../assets/pokeio-logo.png")}
+                                style={styles.logo}
+                                resizeMode="contain"
+                            />
+                        </View>
 
-                <View style={styles.footer}>
-                    <Text style={styles.footerText}>
-                        Já tem uma conta?{" "}
-                    </Text>
-                    <TouchableOpacity
-                        onPress={() => router.push("/(auth)/login")}
-                        disabled={loading}
-                    >
-                        <Text style={styles.signInText}>
-                            Entrar
-                        </Text>
-                    </TouchableOpacity>
-                </View>
-            </ScrollView>
-        </KeyboardAvoidingView>
+                        <View style={styles.header}>
+                            <Text style={styles.title}>Criar Conta</Text>
+                            <Text style={styles.subtitle}>
+                                Já tem uma conta?{" "}
+                                <Text
+                                    style={styles.linkText}
+                                    onPress={() => router.push("/(auth)/login")}
+                                >
+                                    Entrar
+                                </Text>
+                            </Text>
+                        </View>
+
+                        <View style={styles.form}>
+                            {/* Name Input */}
+                            <View style={styles.inputContainer}>
+                                <TextInput
+                                    style={styles.input}
+                                    placeholder="Digite seu nome"
+                                    placeholderTextColor={colors.textSecondary}
+                                    value={name}
+                                    onChangeText={setName}
+                                    autoCapitalize="words"
+                                    editable={!loading}
+                                />
+                            </View>
+
+                            {/* Email Input */}
+                            <View style={styles.inputContainer}>
+                                <TextInput
+                                    style={styles.input}
+                                    placeholder="Digite seu e-mail"
+                                    placeholderTextColor={colors.textSecondary}
+                                    value={email}
+                                    onChangeText={setEmail}
+                                    autoCapitalize="none"
+                                    keyboardType="email-address"
+                                    editable={!loading}
+                                />
+                            </View>
+
+                            {/* Password Input */}
+                            <View style={styles.inputContainer}>
+                                <TextInput
+                                    style={styles.input}
+                                    placeholder="Digite sua senha"
+                                    placeholderTextColor={colors.textSecondary}
+                                    value={password}
+                                    onChangeText={setPassword}
+                                    secureTextEntry
+                                    editable={!loading}
+                                />
+                            </View>
+
+                            {/* Confirm Password Input */}
+                            <View style={styles.inputContainer}>
+                                <TextInput
+                                    style={styles.input}
+                                    placeholder="Confirme sua senha"
+                                    placeholderTextColor={colors.textSecondary}
+                                    value={confirmPassword}
+                                    onChangeText={setConfirmPassword}
+                                    secureTextEntry
+                                    editable={!loading}
+                                />
+                            </View>
+
+                            {/* Register Button */}
+                            <TouchableOpacity
+                                style={[styles.registerButton, loading && styles.buttonDisabled]}
+                                onPress={handleRegister}
+                                disabled={loading}
+                                activeOpacity={0.8}
+                            >
+                                <Text style={styles.registerButtonText}>
+                                    {loading ? "Cadastrando..." : "Cadastrar"}
+                                </Text>
+                            </TouchableOpacity>
+
+                            {/* Divider */}
+                            <View style={styles.dividerContainer}>
+                                <View style={styles.divider} />
+                                <Text style={styles.dividerText}>Ou Continue Com</Text>
+                                <View style={styles.divider} />
+                            </View>
+
+                            {/* Social Signup Buttons */}
+                            <View style={styles.socialButtonsContainer}>
+                                <TouchableOpacity
+                                    style={styles.socialButton}
+                                    disabled={loading}
+                                    activeOpacity={0.8}
+                                >
+                                    <Text style={styles.socialButtonText}>Google</Text>
+                                </TouchableOpacity>
+                            </View>
+                        </View>
+                    </View>
+                </ScrollView>
+            </KeyboardAvoidingView>
+        </View>
     );
 }
 
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: colors.background,
+        backgroundColor: colors.surface,
+    },
+    imageHeader: {
+        position: "absolute",
+        top: 0,
+        left: 0,
+        right: 0,
+        height: 220,
+        zIndex: 0,
+    },
+    keyboardView: {
+        flex: 1,
     },
     scrollContent: {
         flexGrow: 1,
-        justifyContent: 'center',
         paddingHorizontal: spacing.lg,
-        paddingVertical: spacing.xl,
+        marginTop: 180, // 220px (image height) - 40px (overlap)
+        paddingBottom: spacing.xl,
+    },
+    card: {
+        backgroundColor: colors.background,
+        borderRadius: borderRadius.card,
+        padding: spacing.lg,
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.1,
+        shadowRadius: 12,
+        elevation: 5,
+        marginBottom: spacing.xl,
+        position: "relative",
+        zIndex: 10,
+    },
+    logoContainer: {
+        alignItems: "center",
+        marginBottom: spacing.md,
+        marginTop: -spacing.sm,
+    },
+    logo: {
+        width: 160,
+        height: 80,
     },
     header: {
-        marginBottom: spacing["2xl"],
-    },
-    title: {
-        fontSize: 32,
-        color: colors.textPrimary,
-        fontWeight: 'bold',
-        marginBottom: spacing.sm,
-        fontFamily: 'Inter-Bold',
-    },
-    subtitle: {
-        fontSize: 16,
-        color: colors.textSecondary,
-        fontFamily: 'Inter-Regular',
-    },
-    inputGroup: {
-        marginBottom: spacing.md,
-    },
-    label: {
-        fontSize: 14,
-        color: colors.textPrimary,
-        fontWeight: '500',
-        marginBottom: spacing.sm,
-        fontFamily: 'Inter-Medium',
-    },
-    input: {
-        backgroundColor: colors.surface,
-        borderRadius: borderRadius.button,
-        paddingHorizontal: spacing.lg,
-        paddingVertical: spacing.md,
-        fontSize: 16,
-        color: colors.textPrimary,
-        borderWidth: 1,
-        borderColor: colors.divider,
-        fontFamily: 'Inter-Regular',
-    },
-    button: {
-        marginTop: spacing.md,
         marginBottom: spacing.lg,
     },
-    footer: {
-        flexDirection: 'row',
-        justifyContent: 'center',
+    title: {
+        fontSize: 28,
+        fontWeight: "700",
+        color: colors.textPrimary,
+        marginBottom: spacing.sm,
+        fontFamily: "Inter-Bold",
+        textAlign: "center",
     },
-    footerText: {
-        fontSize: 16,
+    subtitle: {
+        fontSize: 15,
         color: colors.textSecondary,
-        fontFamily: 'Inter-Regular',
+        fontFamily: "Inter-Regular",
+        textAlign: "center",
     },
-    signInText: {
+    linkText: {
+        color: colors.primary,
+        fontWeight: "600",
+        fontFamily: "Inter-SemiBold",
+    },
+    form: {
+        gap: spacing.md,
+    },
+    inputContainer: {
+        marginBottom: spacing.sm,
+    },
+    input: {
+        backgroundColor: colors.background,
+        borderWidth: 1,
+        borderColor: colors.divider,
+        borderRadius: borderRadius.input,
+        paddingHorizontal: spacing.md,
+        paddingVertical: 16,
+        fontSize: 15,
+        color: colors.textPrimary,
+        fontFamily: "Inter-Regular",
+    },
+    registerButton: {
+        backgroundColor: colors.primary,
+        borderRadius: borderRadius.button,
+        paddingVertical: 16,
+        alignItems: "center",
+        justifyContent: "center",
+        marginTop: spacing.sm,
+    },
+    registerButtonText: {
         fontSize: 16,
-        color: colors.secondary,
-        fontWeight: '600',
-        fontFamily: 'Inter-SemiBold',
+        fontWeight: "600",
+        color: "#FFFFFF",
+        fontFamily: "Inter-SemiBold",
+    },
+    buttonDisabled: {
+        opacity: 0.6,
+    },
+    dividerContainer: {
+        flexDirection: "row",
+        alignItems: "center",
+        marginVertical: spacing.lg,
+    },
+    divider: {
+        flex: 1,
+        height: 1,
+        backgroundColor: colors.divider,
+    },
+    dividerText: {
+        marginHorizontal: spacing.md,
+        fontSize: 13,
+        color: colors.textSecondary,
+        fontFamily: "Inter-Regular",
+    },
+    socialButtonsContainer: {
+        gap: spacing.sm,
+    },
+    socialButton: {
+        backgroundColor: colors.background,
+        borderWidth: 1,
+        borderColor: colors.divider,
+        borderRadius: borderRadius.button,
+        paddingVertical: 14,
+        alignItems: "center",
+        justifyContent: "center",
+    },
+    socialButtonText: {
+        fontSize: 15,
+        fontWeight: "500",
+        color: colors.textPrimary,
+        fontFamily: "Inter-Medium",
     },
 });

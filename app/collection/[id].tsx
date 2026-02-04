@@ -1,62 +1,59 @@
-import React, { useEffect, useState, useCallback } from "react";
-import { View, Text, StyleSheet, FlatList, ActivityIndicator, TouchableOpacity, Alert, Image } from "react-native";
-import { useLocalSearchParams, useRouter, useFocusEffect } from "expo-router";
+import React, { useEffect, useState } from "react";
+import { View, Text, StyleSheet, FlatList, ActivityIndicator, TouchableOpacity, Alert } from "react-native";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
-import { colors, spacing, borderRadius } from "@/constants/tokens";
-import { StorageService, UserCollection } from "@/services/storage";
-import { PokemonTcgService, PokemonCard } from "@/services/pokemonTcg";
-import { VariantSelectionModal } from "@/components/collections/VariantSelectionModal";
+import { colors, spacing, borderRadius, shadows } from "@/constants/tokens";
+import { CollectionService, CollectionDetails } from "@/services/collection";
+import { useAuth } from "@/hooks/useAuth";
+import { ImageWithLoader } from "@/components/ui/ImageWithLoader";
 
 export default function CollectionDetailsScreen() {
     const { id } = useLocalSearchParams<{ id: string }>();
     const router = useRouter();
-    const [collection, setCollection] = useState<UserCollection | null>(null);
-    const [cards, setCards] = useState<PokemonCard[]>([]);
+    const { user } = useAuth();
+    const [collection, setCollection] = useState<CollectionDetails | null>(null);
     const [loading, setLoading] = useState(true);
+    const [refreshing, setRefreshing] = useState(false);
+    const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-    // Variant Selection State
-    const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
-    const [selectedCardName, setSelectedCardName] = useState<string>("");
-    const [selectedCardImage, setSelectedCardImage] = useState<string | undefined>(undefined);
-    const [showVariantModal, setShowVariantModal] = useState(false);
-
-    useFocusEffect(
-        useCallback(() => {
-            if (id) {
-                loadCollection();
-            }
-        }, [id])
-    );
+    useEffect(() => {
+        if (id) {
+            loadCollection();
+        }
+    }, [id]);
 
     const loadCollection = async () => {
         try {
-            // Only show loader on initial load, not refreshes (e.g. after modal close)
-            if (!collection) setLoading(true);
+            setLoading(true);
+            const data = await CollectionService.getCollectionDetails(id);
 
-            const collections = await StorageService.getUserCollections();
-            const found = collections.find(c => c.id === id);
-
-            if (found) {
-                setCollection(found);
-                if (found.cards.length > 0) {
-                    const cardData = await PokemonTcgService.getCardsByIds(found.cards);
-                    setCards(cardData);
-                } else {
-                    setCards([]);
-                }
+            if (!data) {
+                // Collection not found
+                setCollection(null);
+                setErrorMsg("Dados da coleção retornaram vazios (null).");
+            } else {
+                setCollection(data);
+                setErrorMsg(null);
             }
-        } catch (error) {
+        } catch (error: any) {
             console.error("Failed to load collection", error);
+            setErrorMsg(error.message || "Erro desconhecido ao carregar coleção");
         } finally {
             setLoading(false);
         }
     };
 
+    const handleRefresh = async () => {
+        setRefreshing(true);
+        await loadCollection();
+        setRefreshing(false);
+    };
+
     const handleDeleteCollection = () => {
         Alert.alert(
             "Excluir coleção",
-            "Tem certeza que deseja excluir esta coleção? As cartas não serão excluídas.",
+            "Tem certeza que deseja excluir esta coleção?",
             [
                 { text: "Cancelar", style: "cancel" },
                 {
@@ -64,7 +61,7 @@ export default function CollectionDetailsScreen() {
                     style: "destructive",
                     onPress: async () => {
                         if (!collection) return;
-                        await StorageService.deleteUserCollection(collection.id);
+                        await CollectionService.deleteCollection(collection.id);
                         router.back();
                     }
                 }
@@ -76,27 +73,29 @@ export default function CollectionDetailsScreen() {
         router.push(`/card/${cardId}`);
     };
 
-    const handleCardLongPress = (cardId: string, cardName: string, cardImage?: string) => {
-        setSelectedCardId(cardId);
-        setSelectedCardName(cardName);
-        setSelectedCardImage(cardImage);
-        setShowVariantModal(true);
-    };
-
-    if (loading && !collection) {
+    if (loading) {
         return (
-            <View style={[styles.container, styles.center]}>
-                <ActivityIndicator size="large" color={colors.primary} />
-            </View>
+            <SafeAreaView style={styles.container} edges={['top']}>
+                <View style={styles.loadingContainer}>
+                    <ActivityIndicator size="large" color={colors.primary} />
+                </View>
+            </SafeAreaView>
         );
     }
 
     if (!collection) {
         return (
-            <SafeAreaView style={styles.container}>
-                <View style={[styles.center, { padding: spacing.xl }]}>
-                    <Text style={styles.errorText}>Coleção não encontrada</Text>
-                    <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+            <SafeAreaView style={styles.container} edges={['top']}>
+                <View style={styles.emptyContainer}>
+                    <Text style={styles.emptyText}>Coleção não encontrada</Text>
+                    {errorMsg && (
+                        <View style={{ marginTop: 16, padding: 16, backgroundColor: '#FFEBEE', borderRadius: 8 }}>
+                            <Text style={{ color: colors.error, fontWeight: 'bold' }}>Erro técnico:</Text>
+                            <Text style={{ color: colors.error, marginTop: 4 }}>{errorMsg}</Text>
+                            <Text style={{ color: '#666', marginTop: 8, fontSize: 12 }}>ID: {id}</Text>
+                        </View>
+                    )}
+                    <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
                         <Text style={styles.backButtonText}>Voltar</Text>
                     </TouchableOpacity>
                 </View>
@@ -104,101 +103,80 @@ export default function CollectionDetailsScreen() {
         );
     }
 
-    const renderCardBadges = (cardId: string) => {
-        const variants = collection.cardVariants?.[cardId] || [];
-        if (variants.length === 0) return null;
-
-        // Map variants to icons/colors
-        // This logic mirrors VariantSelectionModal but simplified for badges
-        const getBadge = (variant: string) => {
-            switch (variant) {
-                case 'foil': return { icon: 'star', color: '#FFD700' };
-                case 'reverse': return { icon: 'refresh', color: '#FFFFFF' }; // White for visibility on image
-                case 'pokeball': return { icon: 'radio-button-on', color: '#EF4444' };
-                case 'masterball': return { icon: 'planet', color: '#8B5CF6' };
-                default: return null;
-            }
-        };
-
-        return (
-            <View style={styles.badgeContainer}>
-                {variants.map(v => {
-                    const badge = getBadge(v);
-                    if (!badge) return null;
-                    return (
-                        <View key={v} style={styles.badge}>
-                            <Ionicons name={badge.icon as any} size={10} color={badge.color} />
-                        </View>
-                    );
-                })}
-            </View>
-        );
-    };
-
     return (
         <SafeAreaView style={styles.container} edges={['top']}>
+            {/* Header */}
             <View style={styles.header}>
-                <TouchableOpacity onPress={() => router.back()} style={styles.headerButton}>
+                <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
                     <Ionicons name="arrow-back" size={24} color={colors.textPrimary} />
                 </TouchableOpacity>
                 <View style={styles.headerInfo}>
-                    <Text style={styles.headerTitle} numberOfLines={1}>{collection.name}</Text>
-                    <Text style={styles.headerSubtitle}>{collection.cards.length} cartas</Text>
+                    <Text style={styles.collectionName}>{collection.set_name}</Text>
+                    <Text style={styles.progressText}>
+                        {collection.collected_count}/{collection.total_cards} cartas ({collection.progress_percentage}%)
+                    </Text>
                 </View>
-                <TouchableOpacity onPress={handleDeleteCollection} style={styles.headerButton}>
-                    <Ionicons name="trash-outline" size={24} color={colors.danger} />
+                <TouchableOpacity onPress={handleDeleteCollection} style={styles.deleteBtn}>
+                    <Ionicons name="trash-outline" size={22} color={colors.error} />
                 </TouchableOpacity>
             </View>
 
-            {collection.description ? (
-                <View style={styles.descriptionContainer}>
-                    <Text style={styles.descriptionText}>{collection.description}</Text>
+            {/* Progress Bar */}
+            <View style={styles.progressBarContainer}>
+                <View style={styles.progressBarBackground}>
+                    <View
+                        style={[
+                            styles.progressBarFill,
+                            { width: `${collection.progress_percentage}%` }
+                        ]}
+                    />
                 </View>
-            ) : null}
+            </View>
 
+            {/* Cards Grid */}
             <FlatList
-                data={cards}
+                data={collection.cards}
                 keyExtractor={(item) => item.id}
                 numColumns={3}
-                contentContainerStyle={styles.listContent}
-                columnWrapperStyle={styles.columnWrapper}
+                contentContainerStyle={styles.grid}
+                refreshing={refreshing}
+                onRefresh={handleRefresh}
                 renderItem={({ item }) => (
                     <TouchableOpacity
-                        style={styles.cardItem}
-                        onPress={() => handleCardPress(item.id)}
-                        onLongPress={() => handleCardLongPress(item.id, item.name, item.image)}
+                        style={[
+                            styles.cardContainer,
+                            item.quantity === 0 && styles.cardNotOwned
+                        ]}
+                        onPress={() => handleCardPress(item.card_id)}
                     >
-                        <Image
-                            source={{ uri: item.image ? `${item.image}/low.png` : undefined }}
-                            style={styles.cardImage}
-                            resizeMode="contain"
-                        />
-                        {renderCardBadges(item.id)}
+                        <View style={styles.cardImageContainer}>
+                            {item.card_image ? (
+                                <ImageWithLoader
+                                    source={{ uri: item.card_image }}
+                                    style={styles.cardImage}
+                                    resizeMode="contain"
+                                />
+                            ) : (
+                                <View style={[styles.cardImage, { backgroundColor: colors.surface }]} />
+                            )}
+                        </View>
+                        {item.quantity > 0 && (
+                            <View style={styles.quantityBadge}>
+                                <Text style={styles.quantityText}>×{item.quantity}</Text>
+                            </View>
+                        )}
+                        <View style={styles.cardInfo}>
+                            <Text style={styles.cardInfoText} numberOfLines={1}>{item.card_name}</Text>
+                            <Text style={styles.cardNumberText}>#{item.card_number}</Text>
+                        </View>
                     </TouchableOpacity>
                 )}
                 ListEmptyComponent={
                     <View style={styles.emptyContainer}>
-                        <Ionicons name="albums-outline" size={48} color={colors.divider} />
-                        <Text style={styles.emptyText}>Esta coleção está vazia.</Text>
-                        <Text style={styles.emptySubText}>Explore cartas e adicione-as aqui.</Text>
-                        <TouchableOpacity
-                            style={styles.exploreButton}
-                            onPress={() => router.push('/(tabs)/explore')}
-                        >
-                            <Text style={styles.exploreButtonText}>Explorar Coleções</Text>
-                        </TouchableOpacity>
+                        <Ionicons name="albums-outline" size={64} color={colors.textSecondary} />
+                        <Text style={styles.emptyText}>Nenhuma carta nesta coleção</Text>
                     </View>
                 }
-            />
-
-            <VariantSelectionModal
-                visible={showVariantModal}
-                onClose={() => setShowVariantModal(false)}
-                collectionId={collection.id}
-                cardId={selectedCardId || ""}
-                cardName={selectedCardName}
-                cardImage={selectedCardImage}
-                onUpdate={loadCollection}
             />
         </SafeAreaView>
     );
@@ -209,134 +187,127 @@ const styles = StyleSheet.create({
         flex: 1,
         backgroundColor: colors.background,
     },
-    center: {
+    loadingContainer: {
         flex: 1,
-        alignItems: "center",
         justifyContent: "center",
+        alignItems: "center",
+    },
+    emptyContainer: {
+        flex: 1,
+        justifyContent: "center",
+        alignItems: "center",
+        padding: spacing.xl,
+    },
+    emptyText: {
+        fontSize: 16,
+        color: colors.textSecondary,
+        marginTop: spacing.md,
+        textAlign: "center",
+    },
+    backButton: {
+        marginTop: spacing.lg,
+        backgroundColor: colors.primary,
+        paddingHorizontal: spacing.xl,
+        paddingVertical: spacing.md,
+        borderRadius: borderRadius.button,
+    },
+    backButtonText: {
+        color: "#FFF",
+        fontSize: 16,
+        fontWeight: "600",
     },
     header: {
         flexDirection: "row",
         alignItems: "center",
-        paddingHorizontal: spacing.md,
-        paddingVertical: spacing.sm,
+        padding: spacing.md,
         borderBottomWidth: 1,
         borderBottomColor: colors.divider,
-        backgroundColor: colors.surface,
     },
-    headerButton: {
+    backBtn: {
+        padding: spacing.sm,
+    },
+    deleteBtn: {
         padding: spacing.sm,
     },
     headerInfo: {
         flex: 1,
-        alignItems: 'center',
+        marginLeft: spacing.sm,
     },
-    headerTitle: {
+    collectionName: {
         fontSize: 18,
         fontWeight: "bold",
         color: colors.textPrimary,
-        fontFamily: "Inter-Bold",
     },
-    headerSubtitle: {
-        fontSize: 12,
+    progressText: {
+        fontSize: 13,
         color: colors.textSecondary,
-        fontFamily: "Inter-Regular",
+        marginTop: 2,
     },
-    descriptionContainer: {
-        padding: spacing.md,
+    progressBarContainer: {
+        paddingHorizontal: spacing.md,
+        paddingVertical: spacing.sm,
+    },
+    progressBarBackground: {
+        height: 8,
         backgroundColor: colors.surface,
-        borderBottomWidth: 1,
-        borderBottomColor: colors.divider,
+        borderRadius: 4,
+        overflow: "hidden",
     },
-    descriptionText: {
-        fontSize: 14,
-        color: colors.textSecondary,
-        textAlign: 'center',
-        fontFamily: "Inter-Regular",
+    progressBarFill: {
+        height: "100%",
+        backgroundColor: colors.primary,
+        borderRadius: 4,
     },
-    listContent: {
+    grid: {
         padding: spacing.sm,
-        flexGrow: 1,
     },
-    columnWrapper: {
-        gap: spacing.sm,
-        marginBottom: spacing.sm,
+    cardContainer: {
+        flex: 1 / 3,
+        padding: spacing.xs,
+        marginBottom: spacing.md,
     },
-    cardItem: {
-        flex: 1,
+    cardImageContainer: {
         aspectRatio: 0.7,
-        backgroundColor: colors.surface,
         borderRadius: borderRadius.sm,
         overflow: 'hidden',
-        elevation: 2,
+        backgroundColor: colors.surface,
+        ...shadows.card,
     },
     cardImage: {
         width: '100%',
         height: '100%',
     },
-    badgeContainer: {
-        position: 'absolute',
-        bottom: 4,
-        right: 4,
-        flexDirection: 'row',
-        gap: 2,
-        flexWrap: 'wrap',
-        justifyContent: 'flex-end',
-        maxWidth: '100%',
-    },
-    badge: {
-        backgroundColor: 'rgba(0,0,0,0.6)',
-        borderRadius: 8,
-        width: 16,
-        height: 16,
+    cardInfo: {
+        marginTop: 4,
         alignItems: 'center',
-        justifyContent: 'center',
     },
-    emptyContainer: {
-        flex: 1,
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: spacing.xl,
-        marginTop: 60,
-    },
-    emptyText: {
-        fontSize: 18,
-        fontWeight: 'bold',
+    cardInfoText: {
+        fontSize: 10,
+        fontWeight: '600',
         color: colors.textPrimary,
-        marginTop: spacing.md,
-        fontFamily: "Inter-SemiBold",
-    },
-    emptySubText: {
-        fontSize: 14,
-        color: colors.textSecondary,
-        marginTop: spacing.xs,
         textAlign: 'center',
-        marginBottom: spacing.lg,
-        fontFamily: "Inter-Regular",
     },
-    exploreButton: {
-        backgroundColor: colors.primary,
-        paddingHorizontal: spacing.lg,
-        paddingVertical: spacing.md,
-        borderRadius: borderRadius.button,
-    },
-    exploreButtonText: {
-        color: colors.textPrimary,
-        fontWeight: 'bold',
-        fontFamily: "Inter-SemiBold",
-    },
-    errorText: {
-        fontSize: 16,
+    cardNumberText: {
+        fontSize: 9,
         color: colors.textSecondary,
-        marginBottom: spacing.md,
     },
-    backButton: {
-        padding: spacing.md,
+    cardNotOwned: {
+        opacity: 0.3,
+    },
+    quantityBadge: {
+        position: "absolute",
+        top: spacing.sm,
+        right: spacing.sm,
         backgroundColor: colors.primary,
-        borderRadius: borderRadius.button,
+        borderRadius: 12,
+        paddingHorizontal: spacing.sm,
+        paddingVertical: 2,
+        minWidth: 24,
+        alignItems: "center",
     },
-    backButtonText: {
-        color: "#fff",
+    quantityText: {
+        color: "#FFF",
+        fontSize: 12,
         fontWeight: "bold",
-        fontFamily: "Inter-Bold",
-    }
+    },
 });
