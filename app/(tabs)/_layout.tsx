@@ -1,5 +1,5 @@
 import { Tabs, useRouter } from "expo-router";
-import { useEffect, useRef } from "react";
+import React, { useEffect, useRef } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "@/hooks/useAuth";
 import { colors } from "@/constants/tokens";
@@ -12,8 +12,8 @@ function AnimatedTabIcon({
     color,
     focused
 }: {
-    name: string;
-    outlineName: string;
+    name: React.ComponentProps<typeof Ionicons>["name"];
+    outlineName: React.ComponentProps<typeof Ionicons>["name"];
     color: string;
     focused: boolean;
 }) {
